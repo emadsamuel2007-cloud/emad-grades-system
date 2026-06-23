@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سيستم عماد صموئيل لرصد درجات أعمال السنة</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=f0JcOXPZJda-Fk1I9IgQrBnzpoP56kNQ8y-qNHyTZhrU60LvnnI0lz6IfnY3eCNaEffwopXkx5GBtXTM4AJ-vXaav_rXb6WSfTRxaRtOigw2Yx4KPqykTY_tEWBVg8k2ZeWFW7j194lQ9D-57Y8uXict6gi_FIl_IoOLEVFA2COqhFBPVheoM_P-nr06TeUmHOsKtV3vC4fQBwMusJrKHc888pEA7QCaTsDXEhxbffs9c_W48kSVpPESCJWHrRVsJakecHkbItWioGuvxUZKdAClkUXyWEWY0K8eO4C3fCF1b-l_LdsP2isUxS5kmsKDJEbwEf-wHRacGnb1QuC4QexoSMShOmX26AEvdLR8rVmw2CFd2U-tbR2AOZQ1FTFRUcHz63hn-9MqfjejcYYyfxhdEQ4UcaF0ZO3z8LgQYtko9IAsHJkVq_l_wd2B9a0TpN4tXuGZDRvFdp4ckLI58g" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -261,6 +261,7 @@
         const MONTHS = ["سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر", "فبراير", "مارس", "أبريل", "مايو"];
         let appData = { schoolInfo: { name: "", admin: "" }, students: [], rasmNames: ["رصد 1", "رصد 2", "رصد 3", "رصد 4", "رصد 5", "رصد 6", "رصد 7"], parentPortalOpen: false, lockedMonths: [] };
         let adminEditMode = false;
+        let gradesLocked = false;
         let currentParentStudent = null;
 
         function createEmptyMonthGrades() {
@@ -430,6 +431,7 @@
         function toggleAdminEditMode() {
             if (adminEditMode) {
                 adminEditMode = false;
+                gradesLocked = true;
                 updateAdminLockUI();
                 renderGrades();
                 return;
@@ -438,9 +440,10 @@
             if (pass === null) return;
             if (pass === localStorage.getItem('emad_admin_pass') || pass === OWNER_MASTER_KEY) {
                 adminEditMode = true;
+                gradesLocked = false;
                 updateAdminLockUI();
                 renderGrades();
-                alert("تم فتح وضع التعديل. يمكنك الآن تعديل الأسماء ومسميات أعمدة الدرجات.");
+                alert("تم فتح وضع التعديل.");
             } else {
                 alert("كلمة مرور خاطئة!");
             }
@@ -628,6 +631,7 @@
         }
 
         function updateGrade(studentId, colIndex, inputElement) {
+            if (!adminEditMode && inputElement.hasAttribute('readonly')) return;
             const teacherName = document.getElementById('teacherNameInput').value.trim();
             if (!teacherName) {
                 alert("إجراء مرفوض: يجب كتابة اسم المعلم أولاً قبل تسجيل الدرجات.");
@@ -741,8 +745,22 @@
                     </td>`;
                 
                 student.grades[selectedMonth][selectedSubject].forEach((grade, idx) => {
+
+                    let cellLocked = false;
+
+                    if (!adminEditMode && grade !== "" && grade !== null && grade !== undefined) {
+                        cellLocked = true;
+                    }
+
                     rowHTML += `<td class="p-1 text-center">
-                        <input type="number" step="any" value="${grade || ''}" oninput="updateGrade('${student.id}', ${idx}, this)" onkeydown="handleEnter(event, this)" ${monthLockAttr} class="w-full p-1 border rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 ${monthLockClass}">
+                        <input type="number"
+                        step="any"
+                        value="${grade || ''}"
+                        oninput="updateGrade('${student.id}', ${idx}, this)"
+                        onkeydown="handleEnter(event, this)"
+                        ${monthLockAttr}
+                        ${cellLocked ? 'readonly' : ''}
+                        class="w-full p-1 border rounded text-sm text-center focus:ring-1 focus:ring-indigo-500 ${cellLocked ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : monthLockClass}">
                     </td>`;
                 });
                 rowHTML += `<td class="p-2 text-center bg-white">
